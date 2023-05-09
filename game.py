@@ -9,11 +9,16 @@ def display_score():
 
 def menu_score():
     menu_surf = menu_font.render(f'Your score: {score}', False, (255, 255, 255))
-    menu_rect = menu_surf.get_rect(center = (400, 60))
+    menu_rect = menu_surf.get_rect(center = (400, 30))
     screen.blit(menu_surf, menu_rect)
 
+def display_best():
+    best_surf = score_font.render(f'Best score: {best_score}', False, (255, 255, 255))
+    best_rect = best_surf.get_rect(center = (400, 80))
+    screen.blit(best_surf, best_rect)
+
 def apples_movement(a_list):
-    global game_state, score
+    global game_state, score, best_score
 
     if a_list:
         for a_rect in a_list:
@@ -23,7 +28,9 @@ def apples_movement(a_list):
             a_rect.y += 3
             screen.blit(apple_surf, a_rect)
             if a_rect.bottom > 360:
-                game_state = False
+                if score > best_score:
+                    best_score = score
+                game_state = 2
 
         return a_list
     else:
@@ -40,7 +47,7 @@ def golden_apples_movement(ga_list):
             ga_rect.y += 3
             screen.blit(golden_apple_surf, ga_rect)
             if ga_rect.bottom > 360:
-                game_state = False
+                ga_list.remove(ga_rect)
         
         return ga_list
     else:
@@ -52,13 +59,23 @@ pygame.display.set_caption('Catch the Apples')
 clock = pygame.time.Clock()
 score_font = pygame.font.Font('font/Pixeltype.ttf', 60)
 menu_font = pygame.font.Font('font/Pixeltype.ttf', 80)
+title_font = pygame.font.Font('font/Pixeltype.ttf', 110)
 
-game_state = False
+game_state = 0
+#0 - start, 1 - gra, 2 - przegrales
+
+start_time = 0
+current_time = 0
 
 score = 0
+best_score = 0
 
 move_left = False
 move_right = False
+
+#tytuł
+title_surf = title_font.render('Catch the Apples', False, (255, 255, 255))
+title_rect = title_surf.get_rect(center = (400, 50))
 
 #instrukcje
 instruction_surf = menu_font.render('Press SPACE to play', False, (255, 255, 255))
@@ -85,14 +102,23 @@ player_menu_rect = player_menu_surf.get_rect(center = (400, 200))
 apple_surf = pygame.image.load('graphics/apple.png').convert_alpha()
 apple_surf = pygame.transform.scale_by(apple_surf, 0.3)
 
+apple_menu_surf = pygame.image.load('graphics/apple.png').convert_alpha()
+apple_menu_surf = pygame.transform.rotozoom(apple_menu_surf, 30, 0.7)
+apple_menu_rect = apple_menu_surf.get_rect(center = (500, 150))
+
 golden_apple_surf = pygame.image.load('graphics/golden_apple.png').convert_alpha()
 golden_apple_surf = pygame.transform.scale_by(golden_apple_surf, 0.3)
+
+gapple_menu_surf = pygame.image.load('graphics/golden_apple.png').convert_alpha()
+gapple_menu_surf = pygame.transform.rotozoom(gapple_menu_surf, 330, 0.7)
+gapple_menu_rect = gapple_menu_surf.get_rect(center = (300, 150))
 
 apple_rect_list = []
 golden_apple_rect_list = []
 
+apple_timer_interval = 2000
 apple_timer = pygame.USEREVENT + 1
-pygame.time.set_timer(apple_timer, 1200)
+pygame.time.set_timer(apple_timer, apple_timer_interval)
 
 golden_apple_timer = pygame.USEREVENT + 2
 pygame.time.set_timer(golden_apple_timer, 5000)
@@ -102,7 +128,7 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
-        if game_state:
+        if game_state == 1:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
                     move_left = True
@@ -115,28 +141,36 @@ while True:
                     move_right = False
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
-                game_state = True
+                game_state = 1
                 score = 0
+                start_time = current_time
+                apple_timer_interval = 2000
                 apple_rect_list = []
+                golden_apple_rect_list = []
                 move_right = False
                 move_left = False
                 player_rect.midbottom = (400, 360)
 
-        if event.type == apple_timer and game_state:
+        if event.type == apple_timer and game_state == 1:
             apple_rect_list.append(apple_surf.get_rect(center = (randint(50, 750), -50)))
+            apple_timer = pygame.USEREVENT + 1
+            pygame.time.set_timer(apple_timer, apple_timer_interval)
         
-        if event.type == golden_apple_timer and game_state:
+        if event.type == golden_apple_timer and game_state == 1:
             if randint(1, 5) == 1:
                 golden_apple_rect_list.append(golden_apple_surf.get_rect(center = (randint(50, 750), -50)))
 
-    if game_state:
-
+    if game_state == 1:
         #generuje ziemie i niebo
         screen.blit(sky_surf,sky_rect)
         screen.blit(ground_surf,ground_rect)
 
         #generuje gracza
         screen.blit(player_surf,player_rect)
+
+        apple_timer_interval = 2000 - round((current_time - start_time) / 50)
+        if apple_timer_interval < 800:
+            apple_timer_interval = 800
         
         apple_rect_list = apples_movement(apple_rect_list)
         golden_apple_rect_list = golden_apples_movement(golden_apple_rect_list)
@@ -148,11 +182,21 @@ while True:
             player_rect.x -= 8
         
         display_score()
-    else:
+    elif game_state == 2:
         screen.fill((34, 122, 65))
         screen.blit(player_menu_surf, player_menu_rect)
         screen.blit(instruction_surf, instruction_rect)
         menu_score()
+        display_best()
+    else:
+        screen.fill((32, 122, 65))
+        screen.blit(player_menu_surf, player_menu_rect)
+        screen.blit(apple_menu_surf, apple_menu_rect)
+        screen.blit(gapple_menu_surf, gapple_menu_rect)
+        screen.blit(instruction_surf, instruction_rect)
+        screen.blit(title_surf, title_rect)
+
+    current_time = pygame.time.get_ticks()
         
 
     pygame.display.update()
