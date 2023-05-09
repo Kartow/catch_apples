@@ -12,9 +12,12 @@ def menu_score():
     menu_rect = menu_surf.get_rect(center = (400, 30))
     screen.blit(menu_surf, menu_rect)
 
-def display_best():
-    best_surf = score_font.render(f'Best score: {best_score}', False, (255, 255, 255))
-    best_rect = best_surf.get_rect(center = (400, 80))
+def display_best(a):
+    best_surf = score_font.render(f'Best score: {best_score}', False, (132, 222, 165))
+    if a == 'koniec':
+        best_rect = best_surf.get_rect(center = (400, 80))
+    else:
+        best_rect = best_surf.get_rect(center = (400, 100))
     screen.blit(best_surf, best_rect)
 
 def apples_movement(a_list):
@@ -28,8 +31,6 @@ def apples_movement(a_list):
             a_rect.y += 3
             screen.blit(apple_surf, a_rect)
             if a_rect.bottom > 360:
-                if score > best_score:
-                    best_score = score
                 game_state = 2
 
         return a_list
@@ -66,16 +67,18 @@ game_state = 0
 
 start_time = 0
 current_time = 0
-
+    
 score = 0
-best_score = 0
+
+with open('best_score.txt', 'r') as best_score_file:
+    best_score = int(best_score_file.read())
 
 move_left = False
 move_right = False
 
 #tytuł
 title_surf = title_font.render('Catch the Apples', False, (255, 255, 255))
-title_rect = title_surf.get_rect(center = (400, 50))
+title_rect = title_surf.get_rect(center = (400, 40))
 
 #instrukcje
 instruction_surf = menu_font.render('Press SPACE to play', False, (255, 255, 255))
@@ -104,14 +107,14 @@ apple_surf = pygame.transform.scale_by(apple_surf, 0.3)
 
 apple_menu_surf = pygame.image.load('graphics/apple.png').convert_alpha()
 apple_menu_surf = pygame.transform.rotozoom(apple_menu_surf, 30, 0.7)
-apple_menu_rect = apple_menu_surf.get_rect(center = (500, 150))
+apple_menu_rect = apple_menu_surf.get_rect(center = (500, 200))
 
 golden_apple_surf = pygame.image.load('graphics/golden_apple.png').convert_alpha()
 golden_apple_surf = pygame.transform.scale_by(golden_apple_surf, 0.3)
 
 gapple_menu_surf = pygame.image.load('graphics/golden_apple.png').convert_alpha()
 gapple_menu_surf = pygame.transform.rotozoom(gapple_menu_surf, 330, 0.7)
-gapple_menu_rect = gapple_menu_surf.get_rect(center = (300, 150))
+gapple_menu_rect = gapple_menu_surf.get_rect(center = (300, 200))
 
 apple_rect_list = []
 golden_apple_rect_list = []
@@ -126,6 +129,8 @@ pygame.time.set_timer(golden_apple_timer, 5000)
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            with open('best_score.txt','w') as best_score_file:
+                best_score_file.write(str(best_score))
             pygame.quit()
             exit()
         if game_state == 1:
@@ -187,7 +192,7 @@ while True:
         screen.blit(player_menu_surf, player_menu_rect)
         screen.blit(instruction_surf, instruction_rect)
         menu_score()
-        display_best()
+        display_best('koniec')
     else:
         screen.fill((32, 122, 65))
         screen.blit(player_menu_surf, player_menu_rect)
@@ -195,8 +200,12 @@ while True:
         screen.blit(gapple_menu_surf, gapple_menu_rect)
         screen.blit(instruction_surf, instruction_rect)
         screen.blit(title_surf, title_rect)
+        display_best('menu')
 
     current_time = pygame.time.get_ticks()
+
+    if score > best_score:
+        best_score = score
         
 
     pygame.display.update()
