@@ -28,6 +28,23 @@ def apples_movement(a_list):
         return a_list
     else:
         return []
+
+def golden_apples_movement(ga_list):
+    global game_state, score
+
+    if ga_list:
+        for ga_rect in ga_list:
+            if ga_rect.colliderect(player_rect):
+                ga_list.remove(ga_rect)
+                score += 3
+            ga_rect.y += 3
+            screen.blit(golden_apple_surf, ga_rect)
+            if ga_rect.bottom > 360:
+                game_state = False
+        
+        return ga_list
+    else:
+        return []
     
 pygame.init()
 screen = pygame.display.set_mode((800,400))
@@ -68,10 +85,17 @@ player_menu_rect = player_menu_surf.get_rect(center = (400, 200))
 apple_surf = pygame.image.load('graphics/apple.png').convert_alpha()
 apple_surf = pygame.transform.scale_by(apple_surf, 0.3)
 
+golden_apple_surf = pygame.image.load('graphics/golden_apple.png').convert_alpha()
+golden_apple_surf = pygame.transform.scale_by(golden_apple_surf, 0.3)
+
 apple_rect_list = []
+golden_apple_rect_list = []
 
 apple_timer = pygame.USEREVENT + 1
 pygame.time.set_timer(apple_timer, 1200)
+
+golden_apple_timer = pygame.USEREVENT + 2
+pygame.time.set_timer(golden_apple_timer, 5000)
 
 while True:
     for event in pygame.event.get():
@@ -96,9 +120,14 @@ while True:
                 apple_rect_list = []
                 move_right = False
                 move_left = False
+                player_rect.midbottom = (400, 360)
 
         if event.type == apple_timer and game_state:
             apple_rect_list.append(apple_surf.get_rect(center = (randint(50, 750), -50)))
+        
+        if event.type == golden_apple_timer and game_state:
+            if randint(1, 5) == 1:
+                golden_apple_rect_list.append(golden_apple_surf.get_rect(center = (randint(50, 750), -50)))
 
     if game_state:
 
@@ -110,6 +139,7 @@ while True:
         screen.blit(player_surf,player_rect)
         
         apple_rect_list = apples_movement(apple_rect_list)
+        golden_apple_rect_list = golden_apples_movement(golden_apple_rect_list)
         
         #poruszanie gracza
         if move_right and player_rect.right <= 800:
