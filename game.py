@@ -38,7 +38,7 @@ def apples_movement(a_list):
         return []
 
 def golden_apples_movement(ga_list):
-    global game_state, score
+    global score
 
     if ga_list:
         for ga_rect in ga_list:
@@ -53,10 +53,17 @@ def golden_apples_movement(ga_list):
         return ga_list
     else:
         return []
+
+def speed_fall():
+    speed_rect.center = (randint(50, 750), -50)
+
     
+
 pygame.init()
 screen = pygame.display.set_mode((800,400))
 pygame.display.set_caption('Catch the Apples')
+icon_surf = pygame.image.load('graphics/icon.png').convert_alpha()
+pygame.display.set_icon(icon_surf)
 clock = pygame.time.Clock()
 score_font = pygame.font.Font('font/Pixeltype.ttf', 60)
 menu_font = pygame.font.Font('font/Pixeltype.ttf', 80)
@@ -65,16 +72,24 @@ title_font = pygame.font.Font('font/Pixeltype.ttf', 110)
 game_state = 0
 #0 - start, 1 - gra, 2 - przegrales
 
+aaa = 0
+
 start_time = 0
 current_time = 0
     
 score = 0
+
+speed = 8
+
+is_speed = False
+speed_time_start = -5000
 
 with open('best_score.txt', 'r') as best_score_file:
     best_score = int(best_score_file.read())
 
 move_left = False
 move_right = False
+
 
 #tytuł
 title_surf = title_font.render('Catch the Apples', False, (255, 255, 255))
@@ -101,6 +116,11 @@ player_menu_surf = pygame.image.load('graphics/steve.png').convert_alpha()
 player_menu_surf = pygame.transform.scale_by(player_menu_surf, 0.4)
 player_menu_rect = player_menu_surf.get_rect(center = (400, 200))
 
+#speed_boost
+speed_surf = pygame.image.load('graphics/speed.png').convert_alpha()
+speed_surf = pygame.transform.scale_by(speed_surf, 0.3)
+speed_rect = speed_surf.get_rect(center = (0, -50))
+
 #jablko
 apple_surf = pygame.image.load('graphics/apple.png').convert_alpha()
 apple_surf = pygame.transform.scale_by(apple_surf, 0.3)
@@ -126,6 +146,9 @@ pygame.time.set_timer(apple_timer, apple_timer_interval)
 golden_apple_timer = pygame.USEREVENT + 2
 pygame.time.set_timer(golden_apple_timer, 5000)
 
+speed_timer = pygame.USEREVENT + 3
+pygame.time.set_timer(speed_timer, 5000)
+
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -139,6 +162,9 @@ while True:
                     move_left = True
                 if event.key == pygame.K_RIGHT:
                     move_right = True
+                if event.key == pygame.K_s:
+                    is_speed = True
+                    speed_fall()
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_LEFT:
                     move_left = False
@@ -148,6 +174,7 @@ while True:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 game_state = 1
                 score = 0
+                speed = 8
                 start_time = current_time
                 apple_timer_interval = 2000
                 apple_rect_list = []
@@ -164,6 +191,11 @@ while True:
         if event.type == golden_apple_timer and game_state == 1:
             if randint(1, 5) == 1:
                 golden_apple_rect_list.append(golden_apple_surf.get_rect(center = (randint(50, 750), -50)))
+        
+        if event.type == speed_timer and game_state == 1:
+            if randint(1, 10) == 1:
+                is_speed = True
+                speed_fall()
 
     if game_state == 1:
         #generuje ziemie i niebo
@@ -179,12 +211,25 @@ while True:
         
         apple_rect_list = apples_movement(apple_rect_list)
         golden_apple_rect_list = golden_apples_movement(golden_apple_rect_list)
+
+        #spadanie speed boosta
+        if is_speed and speed_rect.bottom < 360:
+            screen.blit(speed_surf, speed_rect)
+            speed_rect.y += 3
+            if speed_rect.colliderect(player_rect):
+                speed_time_start = current_time
+                is_speed = False
+        if current_time - speed_time_start < 5000:
+            aaa = 1
+            speed = 15
+        else:
+            speed = 8
         
         #poruszanie gracza
         if move_right and player_rect.right <= 800:
-            player_rect.x += 8
+            player_rect.x += speed
         if move_left and player_rect.left >= 0:
-            player_rect.x -= 8
+            player_rect.x -= speed
         
         display_score()
     elif game_state == 2:
@@ -206,7 +251,6 @@ while True:
 
     if score > best_score:
         best_score = score
-        
 
     pygame.display.update()
     clock.tick(60)
