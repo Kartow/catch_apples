@@ -220,7 +220,6 @@ while True:
                 speed_time_start = current_time
                 is_speed = False
         if current_time - speed_time_start < 5000:
-            aaa = 1
             speed = 15
         else:
             speed = 8
